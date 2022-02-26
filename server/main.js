@@ -3,13 +3,14 @@
 const port = 3000;
 const http = require("http");
 const url = require("url");
-const helpers = require("./helpers");
+const routes = require("./routes/routes");
 
 const server = http.createServer();
 
 server.on("request", async (req, res) => {
   const requestData = await getRequestData(req);
-  console.log(requestData);
+  const response = await routes.controller(requestData.payload);
+  console.log(response);
   res.end();
 });
 
