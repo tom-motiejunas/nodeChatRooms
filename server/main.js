@@ -9,8 +9,12 @@ const server = http.createServer();
 
 server.on("request", async (req, res) => {
   const requestData = await getRequestData(req);
-  const response = await routes.controller(requestData.payload);
-  console.log(response);
+  await routes.userRouter[requestData.path].controller(
+    requestData.payload,
+    (statusCode, data) => {
+      console.log(statusCode, data);
+    }
+  );
   res.end();
 });
 

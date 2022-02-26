@@ -1,3 +1,5 @@
+"use strict";
+
 const helpers = require("../helpers");
 
 const userController = {};
@@ -21,7 +23,8 @@ const isValidEmail = function (email) {
   return true;
 };
 
-userController.register = async function (payload) {
+// TODO generate authentication token when register
+userController.register = async function (payload, callback) {
   const displayName = isValidString(payload.displayName)
     ? payload.displayName.trim()
     : false;
@@ -31,37 +34,129 @@ userController.register = async function (payload) {
   const email = isValidEmail(payload.email) ? payload.email.trim() : false;
 
   if (!displayName || !password || !email) {
-    return 400, { Error: "Bad input" };
+    callback(400, { Error: "Bad input" });
+    return;
   }
-  let isErr = false;
-  isErr = helpers.read("users", email, (err) => {
-    if (err) {
-      return err;
+  helpers.read("users", email, (err) => {
+    if (!err) {
+      callback(400, "User already exists with that email");
+      return;
+    } else {
+      const hashedPassword = helpers.hash(password);
+      if (!hashedPassword) {
+        callback(500, { Error: "Could not hash the password" });
+        return;
+      }
+
+      const userObj = {
+        displayName: displayName,
+        hashedPassword: hashedPassword,
+        email: email,
+      };
+
+      helpers.create("users", email, userObj, (err) => {
+        if (err) {
+          callback(err);
+          return;
+        }
+      });
+      callback(200);
     }
   });
-  if (isErr) {
-    return 400, { Error: err };
-  }
-  const hashedPassword = helpers.hash(password);
-  if (!hashedPassword) {
-    return 500, { Error: "Could not hash the password" };
-  }
+};
 
-  const userObj = {
-    displayName: displayName,
-    hashedPassword: hashedPassword,
-    email: email,
-  };
-
-  isErr = await helpers.create("users", email, userObj, (err) => {
+// TODO generate authentication token when logged in
+userController.login = function (payload, callback) {
+  const password = isValidString(payload.password)
+    ? payload.password.trim()
+    : false;
+  const email = isValidEmail(payload.email) ? payload.email.trim() : false;
+  if (!password || !email) {
+    callback(400, { Error: "Bad input" });
+    return;
+  }
+  helpers.read("users", email, (err, data) => {
     if (err) {
-      return err;
+      callback(400, { Error: "Email address not found" });
+      return;
+    }
+    const hashedPassword = helpers.hash(password);
+    if (!hashedPassword) {
+      callback(500, { Error: "Could not hash the password" });
+      return;
+    }
+    if (hashedPassword === data.hashedPassword) {
+      callback(200);
+      return;
+    } else {
+      callback(400, { Error: "Incorrect Password" });
+      return;
     }
   });
-  if (isErr) {
-    return 400, { Error: isErr };
+};
+
+// TODO Authenticate Token
+userController.edit = function (payload, callback) {
+  const password = isValidString(payload.password)
+    ? payload.password.trim()
+    : false;
+  const email = isValidEmail(payload.email) ? payload.email.trim() : false;
+  const displayName = isValidString(payload.displayName)
+    ? payload.displayName.trim()
+    : false;
+
+  if (!email) {
+    callback(400, { Error: "Missing required fields" });
+    return;
   }
-  return 200;
+  if (!password && !displayName) {
+    callback(400, { Error: "Missing fields to update" });
+    return;
+  }
+  helpers.read("users", email, (err, userData) => {
+    if (err) {
+      callback(400, { Error: "Email address not found" });
+      return;
+    }
+    if (password) {
+      userData.password = helpers.hash(password);
+    }
+    if (displayName) {
+      userData.displayName = displayName;
+    }
+    helpers.update("users", email, userData, (err) => {
+      if (!err) {
+        callback(200);
+      } else {
+        console.error(err);
+        callback(500, {});
+      }
+    });
+  });
+};
+
+// TODO Authenticate Token
+userController.delete = function (payload, callback) {
+  const email = isValidEmail(payload.email) ? payload.email.trim() : false;
+
+  if (!email) {
+    callback(400, { Error: "Missing required fields" });
+    return;
+  }
+  helpers.read("users", email, (err, userData) => {
+    if (err) {
+      callback(400, { Error: "Email address not found" });
+      return;
+    }
+    helpers.delete("users", email, (err) => {
+      if (!err) {
+        callback(200);
+      } else {
+        console.error(err);
+        callback(500, {});
+      }
+    });
+  });
 };
 
 module.exports = userController;

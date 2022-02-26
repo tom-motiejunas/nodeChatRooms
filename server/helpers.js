@@ -12,8 +12,6 @@ helpers.parseJsonToObject = (str) => {
   }
 };
 
-const lib = {};
-
 helpers.baseDir = path.join(__dirname, "./.data/");
 
 helpers.create = async function (dir, file, data, callback) {
