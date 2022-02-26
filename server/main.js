@@ -9,12 +9,9 @@ const server = http.createServer();
 
 server.on("request", async (req, res) => {
   const requestData = await getRequestData(req);
-  await routes.userRouter[requestData.path].controller(
-    requestData.payload,
-    (statusCode, data) => {
-      console.log(statusCode, data);
-    }
-  );
+  routes.useRouter(requestData, (statusCode, data) => {
+    console.log(statusCode, data);
+  });
   res.end();
 });
 
@@ -34,6 +31,7 @@ const getPayloadFromRequest = async function (req) {
     buffers.push(chunk);
   }
   const data = Buffer.concat(buffers).toString();
+  if (!data) return;
   return JSON.parse(data);
 };
 
