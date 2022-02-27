@@ -18,6 +18,7 @@ router.useRouter = (data, callback) => {
 
 router.userRouter = (data, callback) => {
   const acceptableMethods = ["post", "put", "delete"];
+  console.log(data, callback);
   if (acceptableMethods.indexOf(data.method) !== -1) {
     return router.userRouter[data.method](data, data.path, callback);
   } else {
@@ -86,5 +87,7 @@ router.tokenRouter.delete = (data, path, callback) => {
     callback(405, { Error: "Unknown path" });
   }
 };
+//router.socket.connection = () => {};
+//router.socket.message = () => {};
 
 module.exports = router;

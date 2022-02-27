@@ -85,7 +85,7 @@ userController.login = function (payload, callback) {
       return;
     }
     if (hashedPassword === data.hashedPassword) {
-      callback(200);
+      callback(200, { displayName: data.displayName });
       return;
     } else {
       callback(400, { Error: "Incorrect Password" });
