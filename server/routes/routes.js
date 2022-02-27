@@ -36,14 +36,14 @@ router.userRouter.post = (data, path, callback) => {
 };
 router.userRouter.put = (data, path, callback) => {
   if (path === "user/edit") {
-    return userController.edit(data.payload, callback);
+    return userController.edit(data, callback);
   } else {
     callback(405, { Error: "Unknown path" });
   }
 };
 router.userRouter.delete = (data, path, callback) => {
   if (path === "user/delete") {
-    return userController.delete(data.payload, callback);
+    return userController.delete(data, callback);
   } else {
     callback(405, { Error: "Unknown path" });
   }
@@ -75,6 +75,13 @@ router.tokenRouter.get = (data, path, callback) => {
 router.tokenRouter.put = (data, path, callback) => {
   if (path === "token/put") {
     return tokenController.put(data.payload, callback);
+  } else {
+    callback(405, { Error: "Unknown path" });
+  }
+};
+router.tokenRouter.delete = (data, path, callback) => {
+  if (path === "token/delete") {
+    return tokenController.delete(data.queryStringObject, callback);
   } else {
     callback(405, { Error: "Unknown path" });
   }

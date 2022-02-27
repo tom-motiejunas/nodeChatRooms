@@ -104,4 +104,41 @@ tokenController.put = function (payload, callback) {
     }
   });
 };
+
+tokenController.delete = function (queryStringObject, callback) {
+  const id = isValidString(queryStringObject.id)
+    ? queryStringObject.id.trim()
+    : false;
+  if (!id) {
+    callback(400, { Error: "Missing required field" });
+    return;
+  }
+  helpers.read("tokens", id, function (err, data) {
+    if (!err && data) {
+      helpers.delete("tokens", id, (err) => {
+        if (!err) {
+          callback(200);
+        } else {
+          callback(500, { Error: "Could not delete the specified token" });
+        }
+      });
+    } else {
+      callback(400, { Error: "Could not find specified token" });
+      return;
+    }
+  });
+};
+tokenController.verifyToken = function (id, email, callback) {
+  helpers.read("tokens", id, (err, tokenData) => {
+    if (!err && tokenData) {
+      if (tokenData.email === email && tokenData.expires > Date.now()) {
+        callback(true);
+      } else {
+        callback(false);
+      }
+    } else {
+      callback(false);
+    }
+  });
+};
 module.exports = tokenController;

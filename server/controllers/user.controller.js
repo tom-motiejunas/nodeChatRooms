@@ -1,6 +1,7 @@
 "use strict";
 
 const helpers = require("../helpers");
+const { verifyToken } = require("./token.controller");
 
 const userController = {};
 
@@ -23,7 +24,6 @@ const isValidEmail = function (email) {
   return true;
 };
 
-// TODO generate authentication token when register
 userController.register = async function (payload, callback) {
   const displayName = isValidString(payload.displayName)
     ? payload.displayName.trim()
@@ -65,7 +65,6 @@ userController.register = async function (payload, callback) {
   });
 };
 
-// TODO generate authentication token when logged in
 userController.login = function (payload, callback) {
   const password = isValidString(payload.password)
     ? payload.password.trim()
@@ -95,16 +94,19 @@ userController.login = function (payload, callback) {
   });
 };
 
-// TODO Authenticate Token
-userController.edit = function (payload, callback) {
-  const password = isValidString(payload.password)
-    ? payload.password.trim()
+userController.edit = function (data, callback) {
+  const password = isValidString(data.payload.password)
+    ? data.payload.password.trim()
     : false;
-  const email = isValidEmail(payload.email) ? payload.email.trim() : false;
-  const displayName = isValidString(payload.displayName)
-    ? payload.displayName.trim()
+  const email = isValidEmail(data.payload.email)
+    ? data.payload.email.trim()
     : false;
-
+  const displayName = isValidString(data.payload.displayName)
+    ? data.payload.displayName.trim()
+    : false;
+  const token = isValidString(data.headers.token)
+    ? data.headers.token.trim()
+    : false;
   if (!email) {
     callback(400, { Error: "Missing required fields" });
     return;
@@ -113,48 +115,67 @@ userController.edit = function (payload, callback) {
     callback(400, { Error: "Missing fields to update" });
     return;
   }
-  helpers.read("users", email, (err, userData) => {
-    if (err) {
-      callback(400, { Error: "Email address not found" });
-      return;
+  verifyToken(token, email, (isValidToken) => {
+    if (!isValidToken) {
+      callback(403, {
+        Error: "Missing required token in header, or token is invalid",
+      });
+      return false;
     }
-    if (password) {
-      userData.password = helpers.hash(password);
-    }
-    if (displayName) {
-      userData.displayName = displayName;
-    }
-    helpers.update("users", email, userData, (err) => {
-      if (!err) {
-        callback(200);
-      } else {
-        console.error(err);
-        callback(500, {});
+    helpers.read("users", email, (err, userData) => {
+      if (err) {
+        callback(400, { Error: "Email address not found" });
+        return;
       }
+      if (password) {
+        userData.password = helpers.hash(password);
+      }
+      if (displayName) {
+        userData.displayName = displayName;
+      }
+      helpers.update("users", email, userData, (err) => {
+        if (!err) {
+          callback(200);
+        } else {
+          console.error(err);
+          callback(500, {});
+        }
+      });
     });
   });
 };
 
-// TODO Authenticate Token
-userController.delete = function (payload, callback) {
-  const email = isValidEmail(payload.email) ? payload.email.trim() : false;
-
+userController.delete = function (data, callback) {
+  const email = isValidEmail(data.payload.email)
+    ? data.payload.email.trim()
+    : false;
+  const token = isValidString(data.headers.token)
+    ? data.headers.token.trim()
+    : false;
   if (!email) {
     callback(400, { Error: "Missing required fields" });
     return;
   }
-  helpers.read("users", email, (err, userData) => {
-    if (err) {
-      callback(400, { Error: "Email address not found" });
+  verifyToken(token, email, (isValidToken) => {
+    if (!isValidToken) {
+      callback(403, {
+        Error: "Missing required token in header, or token is invalid",
+      });
       return;
     }
-    helpers.delete("users", email, (err) => {
-      if (!err) {
-        callback(200);
-      } else {
-        console.error(err);
-        callback(500, {});
+    helpers.read("users", email, (err) => {
+      if (err) {
+        callback(400, { Error: "Email address not found" });
+        return;
       }
+      helpers.delete("users", email, (err) => {
+        if (!err) {
+          callback(200);
+        } else {
+          console.error(err);
+          callback(500, {});
+        }
+      });
     });
   });
 };

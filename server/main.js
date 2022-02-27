@@ -11,8 +11,14 @@ server.on("request", async (req, res) => {
   const requestData = await getRequestData(req);
   routes.useRouter(requestData, (statusCode, data) => {
     console.log(statusCode, data);
+    res.writeHead(statusCode, {
+      "Content-Type": "application/json",
+    });
+    if (data) {
+      res.write(JSON.stringify(data));
+    }
+    res.end();
   });
-  res.end();
 });
 
 server.listen(port, () => {
